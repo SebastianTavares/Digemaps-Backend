@@ -1,6 +1,9 @@
 using System.Text;
 using System.Text.Json.Serialization;
 using LabBackend.API.Data;
+using LabBackend.API.Features.Analisis;
+using LabBackend.API.Features.Auth;
+using LabBackend.API.Features.Muestras;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -8,7 +11,6 @@ using Microsoft.IdentityModel.Tokens;
 var builder = WebApplication.CreateSlimBuilder(args);
 
 // 1. Configuración JSON para AOT
-// NOTA: Aquí iremos registrando los DTOs para que funcionen en modo nativo.
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
@@ -28,8 +30,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer = false,   // Simplificado para desarrollo rápido
-            ValidateAudience = false, // Simplificado para desarrollo rápido
+            ValidateIssuer = false,
+            ValidateAudience = false,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
@@ -56,8 +58,6 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-    // Nota: Para ver la UI visual, accede a /openapi/v1.json y úsalo en un visor, 
-    // o agrega Scalar/SwaggerUI si tienes tiempo extra.
 }
 
 app.UseCors("AllowAll");
@@ -65,20 +65,31 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Mapeo de Endpoints (Aquí irán tus features)
-// app.MapGroup("/api/auth").MapAuthEndpoints(); 
+// Mapeo de Endpoints
+app.MapGroup("/api/auth").MapAuthEndpoints();
+app.MapGroup("/api/muestras").MapMuestrasEndpoints();
+app.MapGroup("/api/analisis").MapAnalisisEndpoints();
 
 app.Run();
 
-//Contexto de Serialización para AOT
-// IMPORTANTE: Cada vez que crees un DTO nuevo que se envíe o reciba por API, 
-// debes agregarlo aquí con [JsonSerializable(typeof(TuClase))]
+// Contexto de Serialización para AOT
 [JsonSerializable(typeof(string))]
 [JsonSerializable(typeof(int))]
 [JsonSerializable(typeof(bool))]
 [JsonSerializable(typeof(DateTime))]
-// [JsonSerializable(typeof(LoginRequest))] // Descomentar cuando crees el Login
-// [JsonSerializable(typeof(LoginResponse))] 
+// Auth DTOs
+[JsonSerializable(typeof(LoginRequest))]
+[JsonSerializable(typeof(LoginResponse))]
+// Muestras DTOs
+[JsonSerializable(typeof(MuestraDto))]
+[JsonSerializable(typeof(MuestraDto[]))]
+[JsonSerializable(typeof(CreateMuestraRequest))]
+// Análisis Fisicoquímico DTOs
+[JsonSerializable(typeof(AnalisisFisicoquimicoDto))]
+[JsonSerializable(typeof(CreateAnalisisFisicoquimicoRequest))]
+// Análisis Microbiológico DTOs
+[JsonSerializable(typeof(AnalisisMicrobiologicoDto))]
+[JsonSerializable(typeof(CreateAnalisisMicrobiologicoRequest))]
 internal partial class AppJsonSerializerContext : JsonSerializerContext
 {
 }
