@@ -2,10 +2,17 @@
 using LabBackend.API.Domain.Entities;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
 
 namespace LabBackend.API.Features.Muestras;
 
 // DTOs
+public record UpdateEstadoMuestraRequest(
+    [property: JsonPropertyName("estado")]
+    int EstadoMuestraId
+);
+
+
 public record MuestraDto(
     int Id,
     string CodigoUnico,
@@ -75,11 +82,43 @@ public static class MuestrasEndpoints
         group.MapPost("/", CreateAsync);
         group.MapPut("/{id:int}", UpdateAsync);
         group.MapDelete("/{id:int}", DeleteAsync);
+        group.MapPut("/{id:int}/estado", UpdateEstadoAsync);
 
         group.RequireAuthorization();
 
         return group;
     }
+
+    private static async Task<
+    Results<NoContent, NotFound, BadRequest<string>>>
+UpdateEstadoAsync(
+    int id,
+    UpdateEstadoMuestraRequest request,
+    LabDbContext db)
+    {
+        var muestra = await db.Muestras.FindAsync(id);
+
+        if (muestra is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        var estadoExiste = await db.EstadoMuestras
+            .AsNoTracking()
+            .AnyAsync(e => e.EstadoMuestraId == request.EstadoMuestraId);
+
+        if (!estadoExiste)
+        {
+            return TypedResults.BadRequest("El estado de muestra no existe. " + request.EstadoMuestraId);
+        }
+
+        muestra.EstadoMuestraId = request.EstadoMuestraId;
+
+        await db.SaveChangesAsync();
+
+        return TypedResults.NoContent();
+    }
+
 
     private static async Task<Ok<MuestraDto[]>> GetAllAsync(LabDbContext db)
     {

@@ -1,17 +1,26 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using LabBackend.API.Data;
+﻿using LabBackend.API.Data;
 using LabBackend.API.Domain.Entities;
+using LabBackend.API.Features.Catalogos;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace LabBackend.API.Features.Auth;
 
 public record LoginRequest(string Correo, string Contrasena);
 public record LoginResponse(string Token, string Nombre, string Rol);
 public record RegisterRequest(string Nombre, string Correo, string Contrasena, string Rol);
+
+public record UsuarioResponse(
+    int Id,
+    string Nombre,
+    string Correo,
+    string Rol
+);
+
 
 public static class AuthEndpoints
 {
@@ -23,7 +32,26 @@ public static class AuthEndpoints
         group.MapPost("/register", RegisterAsync)
              .AllowAnonymous();
 
+        group.MapGet("/users", GetAllUsersAsync)
+            .RequireAuthorization();
+
         return group;
+    }
+
+    private static async Task<Ok<List<UsuarioResponse>>> GetAllUsersAsync(
+    LabDbContext db)
+    {
+        var usuarios = await db.Usuarios
+            .AsNoTracking()
+            .Select(u => new UsuarioResponse(
+                u.UsuId,
+                u.UsuNombre,
+                u.UsuCorreo,
+                u.UsuRol
+            ))
+            .ToListAsync();
+
+        return TypedResults.Ok(usuarios);
     }
 
     private static async Task<Results<Ok<LoginResponse>, UnauthorizedHttpResult>> LoginAsync(

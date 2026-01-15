@@ -6,6 +6,11 @@ using Microsoft.EntityFrameworkCore;
 namespace LabBackend.API.Features.Muestras;
 
 // DTOs
+public record CreateAsignacionRequest(
+    int MuestraId,
+    int UsuarioId
+);
+
 public record AsignacionDto(
     int Id,
     int MuestraId,
@@ -24,6 +29,7 @@ public static class AsignacionesEndpoints
     public static RouteGroupBuilder MapAsignacionesEndpoints(this RouteGroupBuilder group)
     {
         group.MapGet("/", GetAllAsync);
+        group.MapPost("/", CreateAsync);
         group.MapGet("/{id:int}", GetByIdAsync);
         group.MapPost("/muestras/{muestraId:int}/asignar", AssignUserAsync);
         group.MapPut("/{id:int}", UpdateAsync);
@@ -33,6 +39,62 @@ public static class AsignacionesEndpoints
 
         return group;
     }
+    private static async Task<
+    Results<Created<AsignacionDto>, BadRequest<string>, Conflict<string>>>
+CreateAsync(
+    CreateAsignacionRequest request,
+    LabDbContext db)
+    {
+        var muestra = await db.Muestras
+            .AsNoTracking()
+            .FirstOrDefaultAsync(m => m.MuestraId == request.MuestraId);
+
+        if (muestra is null)
+        {
+            return TypedResults.BadRequest("La muestra no existe.");
+        }
+
+        var usuario = await db.Usuarios
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.UsuId == request.UsuarioId);
+
+        if (usuario is null)
+        {
+            return TypedResults.BadRequest("El usuario no existe.");
+        }
+
+        var exists = await db.MuestraUsuarioRols
+            .AnyAsync(x => x.MuestraId == request.MuestraId
+                        && x.UsuId == request.UsuarioId);
+
+        //if (exists)
+        //{
+        //    return TypedResults.Conflict("La asignación ya existe.");
+        //}
+
+        var asignacion = new MuestraUsuarioRol
+        {
+            MuestraId = request.MuestraId,
+            UsuId = request.UsuarioId,
+            AsignadoEn = DateTime.UtcNow
+        };
+
+        db.MuestraUsuarioRols.Add(asignacion);
+        await db.SaveChangesAsync();
+
+        var dto = new AsignacionDto(
+            asignacion.Id,
+            muestra.MuestraId,
+            muestra.MuestraCodigoUnico,
+            muestra.MuestraNombre,
+            usuario.UsuId,
+            usuario.UsuNombre,
+            asignacion.AsignadoEn
+        );
+
+        return TypedResults.Created($"/api/asignaciones/{asignacion.Id}", dto);
+    }
+
 
     private static async Task<Ok<AsignacionDto[]>> GetAllAsync(LabDbContext db)
     {

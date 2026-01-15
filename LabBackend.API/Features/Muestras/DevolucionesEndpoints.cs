@@ -89,10 +89,10 @@ public static class DevolucionesEndpoints
             .AsNoTracking()
             .AnyAsync(d => d.MuestraId == muestraId);
 
-        if (alreadyReturned)
-        {
-            return TypedResults.Conflict("La muestra ya fue devuelta anteriormente.");
-        }
+        //if (alreadyReturned)
+        //{
+        //    return TypedResults.Conflict("La muestra ya fue devuelta anteriormente.");
+        //}
 
         var devolucion = new DevolucionMuestra
         {
