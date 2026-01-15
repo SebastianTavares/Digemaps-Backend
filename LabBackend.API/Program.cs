@@ -69,6 +69,8 @@ app.UseAuthorization();
 app.MapGroup("/api/auth").MapAuthEndpoints();
 app.MapGroup("/api/muestras").MapMuestrasEndpoints();
 app.MapGroup("/api/analisis").MapAnalisisEndpoints();
+app.MapGroup("/api/asignaciones").MapAsignacionesEndpoints();
+app.MapGroup("/api/devoluciones").MapDevolucionesEndpoints();
 
 app.Run();
 
@@ -90,6 +92,10 @@ app.Run();
 // Análisis Microbiológico DTOs
 [JsonSerializable(typeof(AnalisisMicrobiologicoDto))]
 [JsonSerializable(typeof(CreateAnalisisMicrobiologicoRequest))]
+// Asignaciones DTOs
+[JsonSerializable(typeof(AssignUserRequest))]
+// Devoluciones DTOs
+[JsonSerializable(typeof(CreateDevolucionRequest))]
 internal partial class AppJsonSerializerContext : JsonSerializerContext
 {
 }
