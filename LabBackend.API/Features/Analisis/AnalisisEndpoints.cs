@@ -48,6 +48,34 @@ public record CreateAnalisisFisicoquimicoRequest(
     string Observaciones,
     string AptoConsumoHumano);
 
+public record UpdateAnalisisFisicoquimicoRequest(
+    DateOnly FechaEntrega,
+    DateOnly FechaVencimiento,
+    decimal Acidez,
+    decimal CloroResidual,
+    decimal Cenizas,
+    decimal Cumarina,
+    string Colorante,
+    decimal Densidad,
+    decimal Dureza,
+    decimal ExtractoSeco,
+    decimal Fecula,
+    decimal GradoAlcoholico,
+    decimal Humedad,
+    decimal IndiceRefraccion,
+    decimal IndiceAcidez,
+    decimal IndiceRancidez,
+    string MateriaGrasaCualitativa,
+    decimal MateriaGrasaCuantitativa,
+    decimal Ph,
+    string PruebaEbar,
+    decimal SolidosTotales,
+    string TiempoCoccion,
+    string OtrasDeterminaciones,
+    string Referencia,
+    string Observaciones,
+    string AptoConsumoHumano);
+
 // DTOs for Microbiológico
 public record AnalisisMicrobiologicoDto(
     int Id,
@@ -77,6 +105,24 @@ public record CreateAnalisisMicrobiologicoRequest(
     string AptoParaConsumo,
     bool EsCopia);
 
+public record UpdateAnalisisMicrobiologicoRequest(
+    string ResMicroorganismosAerobios,
+    string ResRecuentoColiformes,
+    string ResColiformesTotales,
+    string ResPseudomonasSpp,
+    string ResEColi,
+    string ResSalmonellaSpp,
+    string ResEstafilococosAureus,
+    string ResHongos,
+    string ResLevaduras,
+    string ResEsterilidadComercial,
+    string ResListeriaMonocytogenes,
+    string MetodologiaReferencia,
+    string Equipos,
+    string Observaciones,
+    string AptoParaConsumo,
+    bool EsCopia);
+
 public static class AnalisisEndpoints
 {
     public static RouteGroupBuilder MapAnalisisEndpoints(this RouteGroupBuilder group)
@@ -84,10 +130,14 @@ public static class AnalisisEndpoints
         // Fisicoquímico endpoints
         group.MapGet("/{muestraId:int}/fisicoquimico", GetFisicoquimicoByMuestraAsync);
         group.MapPost("/{muestraId:int}/fisicoquimico", CreateFisicoquimicoAsync);
+        group.MapPut("/fisicoquimico/{id:int}", UpdateFisicoquimicoAsync);
+        group.MapDelete("/fisicoquimico/{id:int}", DeleteFisicoquimicoAsync);
 
         // Microbiológico endpoints
         group.MapGet("/{muestraId:int}/microbiologico", GetMicrobiologicoByMuestraAsync);
         group.MapPost("/{muestraId:int}/microbiologico", CreateMicrobiologicoAsync);
+        group.MapPut("/microbiologico/{id:int}", UpdateMicrobiologicoAsync);
+        group.MapDelete("/microbiologico/{id:int}", DeleteMicrobiologicoAsync);
 
         group.RequireAuthorization();
 
@@ -189,6 +239,67 @@ public static class AnalisisEndpoints
             analisis.AnalisisFqId);
     }
 
+    private static async Task<Results<NoContent, NotFound>> UpdateFisicoquimicoAsync(
+        int id,
+        UpdateAnalisisFisicoquimicoRequest request,
+        LabDbContext db)
+    {
+        var analisis = await db.AnalisisFisicoquimicos.FindAsync(id);
+
+        if (analisis is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        analisis.FechaEntrega = request.FechaEntrega;
+        analisis.FechaVencimiento = request.FechaVencimiento;
+        analisis.Acidez = request.Acidez;
+        analisis.CloroResidual = request.CloroResidual;
+        analisis.Cenizas = request.Cenizas;
+        analisis.Cumarina = request.Cumarina;
+        analisis.Colorante = request.Colorante;
+        analisis.Densidad = request.Densidad;
+        analisis.Dureza = request.Dureza;
+        analisis.ExtractoSeco = request.ExtractoSeco;
+        analisis.Fecula = request.Fecula;
+        analisis.GradoAlcoholico = request.GradoAlcoholico;
+        analisis.Humedad = request.Humedad;
+        analisis.IndiceRefraccion = request.IndiceRefraccion;
+        analisis.IndiceAcidez = request.IndiceAcidez;
+        analisis.IndiceRancidez = request.IndiceRancidez;
+        analisis.MateriaGrasaCualitativa = request.MateriaGrasaCualitativa;
+        analisis.MateriaGrasaCuantitativa = request.MateriaGrasaCuantitativa;
+        analisis.Ph = request.Ph;
+        analisis.PruebaEbar = request.PruebaEbar;
+        analisis.SolidosTotales = request.SolidosTotales;
+        analisis.TiempoCoccion = request.TiempoCoccion;
+        analisis.OtrasDeterminaciones = request.OtrasDeterminaciones;
+        analisis.Referencia = request.Referencia;
+        analisis.Observaciones = request.Observaciones;
+        analisis.AptoConsumoHumano = request.AptoConsumoHumano;
+
+        await db.SaveChangesAsync();
+
+        return TypedResults.NoContent();
+    }
+
+    private static async Task<Results<NoContent, NotFound>> DeleteFisicoquimicoAsync(
+        int id,
+        LabDbContext db)
+    {
+        var analisis = await db.AnalisisFisicoquimicos.FindAsync(id);
+
+        if (analisis is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        db.AnalisisFisicoquimicos.Remove(analisis);
+        await db.SaveChangesAsync();
+
+        return TypedResults.NoContent();
+    }
+
     // ========== MICROBIOLÓGICO ==========
 
     private static async Task<Results<Ok<AnalisisMicrobiologicoDto>, NotFound>> GetMicrobiologicoByMuestraAsync(
@@ -268,5 +379,56 @@ public static class AnalisisEndpoints
         return TypedResults.Created(
             $"/api/muestras/{muestraId}/microbiologico",
             analisis.AnalisisMicroId);
+    }
+
+    private static async Task<Results<NoContent, NotFound>> UpdateMicrobiologicoAsync(
+        int id,
+        UpdateAnalisisMicrobiologicoRequest request,
+        LabDbContext db)
+    {
+        var analisis = await db.AnalisisMicrobiologicos.FindAsync(id);
+
+        if (analisis is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        analisis.ResMicroorganismosAerobios = request.ResMicroorganismosAerobios;
+        analisis.ResRecuentoColiformes = request.ResRecuentoColiformes;
+        analisis.ResColiformesTotales = request.ResColiformesTotales;
+        analisis.ResPseudomonasSpp = request.ResPseudomonasSpp;
+        analisis.ResEColi = request.ResEColi;
+        analisis.ResSalmonellaSpp = request.ResSalmonellaSpp;
+        analisis.ResEstafilococosAureus = request.ResEstafilococosAureus;
+        analisis.ResHongos = request.ResHongos;
+        analisis.ResLevaduras = request.ResLevaduras;
+        analisis.ResEsterilidadComercial = request.ResEsterilidadComercial;
+        analisis.ResListeriaMonocytogenes = request.ResListeriaMonocytogenes;
+        analisis.MetodologiaReferencia = request.MetodologiaReferencia;
+        analisis.Equipos = request.Equipos;
+        analisis.Observaciones = request.Observaciones;
+        analisis.AptoParaConsumo = request.AptoParaConsumo;
+        analisis.EsCopia = request.EsCopia;
+
+        await db.SaveChangesAsync();
+
+        return TypedResults.NoContent();
+    }
+
+    private static async Task<Results<NoContent, NotFound>> DeleteMicrobiologicoAsync(
+        int id,
+        LabDbContext db)
+    {
+        var analisis = await db.AnalisisMicrobiologicos.FindAsync(id);
+
+        if (analisis is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        db.AnalisisMicrobiologicos.Remove(analisis);
+        await db.SaveChangesAsync();
+
+        return TypedResults.NoContent();
     }
 }

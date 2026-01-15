@@ -43,6 +43,29 @@ public record CreateMuestraRequest(
     string DireccionToma,
     DateOnly FechaToma);
 
+public record UpdateMuestraRequest(
+    string Nombre,
+    int TipoMuestraId,
+    int SolicitanteId,
+    int RegionId,
+    int EstadoMuestraId,
+    string NumOficio,
+    string NumLote,
+    DateOnly FechaRecepcion,
+    string CondicionesRecepcion,
+    string MotivoSolicitud,
+    string Color,
+    string Olor,
+    string Sabor,
+    string Aspecto,
+    string Textura,
+    decimal PesoNeto,
+    string DpsArea,
+    string TomadaPor,
+    string EnviadaPor,
+    string DireccionToma,
+    DateOnly FechaToma);
+
 public static class MuestrasEndpoints
 {
     public static RouteGroupBuilder MapMuestrasEndpoints(this RouteGroupBuilder group)
@@ -50,6 +73,8 @@ public static class MuestrasEndpoints
         group.MapGet("/", GetAllAsync);
         group.MapGet("/{id:int}", GetByIdAsync);
         group.MapPost("/", CreateAsync);
+        group.MapPut("/{id:int}", UpdateAsync);
+        group.MapDelete("/{id:int}", DeleteAsync);
 
         group.RequireAuthorization();
 
@@ -155,5 +180,61 @@ public static class MuestrasEndpoints
         await db.SaveChangesAsync();
 
         return TypedResults.Created($"/api/muestras/{muestra.MuestraId}", muestra.MuestraId);
+    }
+
+    private static async Task<Results<NoContent, NotFound>> UpdateAsync(
+        int id,
+        UpdateMuestraRequest request,
+        LabDbContext db)
+    {
+        var muestra = await db.Muestras.FindAsync(id);
+
+        if (muestra is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        muestra.MuestraNombre = request.Nombre;
+        muestra.TipoMuestraId = request.TipoMuestraId;
+        muestra.SolicitanteId = request.SolicitanteId;
+        muestra.RegionId = request.RegionId;
+        muestra.EstadoMuestraId = request.EstadoMuestraId;
+        muestra.NumOficio = request.NumOficio;
+        muestra.NumLote = request.NumLote;
+        muestra.FechaRecepcion = request.FechaRecepcion;
+        muestra.CondicionesRecepcion = request.CondicionesRecepcion;
+        muestra.MotivoSolicitud = request.MotivoSolicitud;
+        muestra.Color = request.Color;
+        muestra.Olor = request.Olor;
+        muestra.Sabor = request.Sabor;
+        muestra.Aspecto = request.Aspecto;
+        muestra.Textura = request.Textura;
+        muestra.PesoNeto = request.PesoNeto;
+        muestra.DpsArea = request.DpsArea;
+        muestra.TomadaPor = request.TomadaPor;
+        muestra.EnviadaPor = request.EnviadaPor;
+        muestra.DireccionToma = request.DireccionToma;
+        muestra.FechaToma = request.FechaToma;
+
+        await db.SaveChangesAsync();
+
+        return TypedResults.NoContent();
+    }
+
+    private static async Task<Results<NoContent, NotFound>> DeleteAsync(
+        int id,
+        LabDbContext db)
+    {
+        var muestra = await db.Muestras.FindAsync(id);
+
+        if (muestra is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        db.Muestras.Remove(muestra);
+        await db.SaveChangesAsync();
+
+        return TypedResults.NoContent();
     }
 }
