@@ -5,8 +5,10 @@ using LabBackend.API.Features.Auth;
 using LabBackend.API.Features.Catalogos;
 using LabBackend.API.Features.Muestras;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.OpenApi;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 
 // 1. CAMBIO CLAVE: Usamos CreateBuilder normal (No SlimBuilder)
@@ -38,8 +40,39 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-// 4. OpenAPI / Swagger
-builder.Services.AddOpenApi();
+// 4. OpenAPI / Swagger con Bearer Authentication
+builder.Services.AddOpenApi(options =>
+{
+    // Add Bearer security scheme using document transformer
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        // Ensure Components exists
+        document.Components ??= new OpenApiComponents();
+        
+        // Ensure SecuritySchemes dictionary exists
+        if (document.Components.SecuritySchemes is null)
+        {
+            document.Components.SecuritySchemes = new Dictionary<string, IOpenApiSecurityScheme>();
+        }
+        
+        // Create and add security scheme
+        document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            Description = "Ingrese el token JWT"
+        };
+
+        // Add global security requirement
+        document.Security ??= [];
+        var requirement = new OpenApiSecurityRequirement();
+        requirement.Add(new OpenApiSecuritySchemeReference("Bearer"), []);
+        document.Security.Add(requirement);
+
+        return Task.CompletedTask;
+    });
+});
 
 // 5. CORS (Permitir todo para desarrollo rápido)
 builder.Services.AddCors(options =>
@@ -58,7 +91,7 @@ if (app.Environment.IsDevelopment())
     // Genera el JSON de OpenAPI
     app.MapOpenApi();
 
-    // Interfaz Gráfica Scalar (Funciona perfecto en modo estándar también)
+    // Interfaz Gráfica Scalar
     app.MapScalarApiReference();
 }
 
@@ -74,23 +107,19 @@ app.UseAuthorization();
 // Auth
 app.MapGroup("/api/auth").MapAuthEndpoints();
 
-// Muestras (Incluye Asignaciones y Devoluciones si están en la misma carpeta/namespace)
-// Si Asignaciones/Devoluciones están en clases separadas, asegúrate de tener los 'using' arriba.
+// Muestras
 app.MapGroup("/api/muestras").MapMuestrasEndpoints();
 
 // Análisis (Físico y Micro)
 app.MapGroup("/api/analisis").MapAnalisisEndpoints();
 
-// Asignaciones (Si creaste una clase separada AsignacionesEndpoints)
+// Asignaciones
 app.MapGroup("/api/asignaciones").MapAsignacionesEndpoints();
 
-// Devoluciones (Si creaste una clase separada DevolucionesEndpoints)
+// Devoluciones
 app.MapGroup("/api/devoluciones").MapDevolucionesEndpoints();
 
 // Catálogos
 app.MapGroup("/api/catalogos").MapCatalogosEndpoints();
 
 app.Run();
-
-// NOTA: He eliminado toda la clase 'AppJsonSerializerContext' del final.
-// En modo estándar (.NET JIT), NO LA NECESITAS. .NET serializa todo automáticamente.
