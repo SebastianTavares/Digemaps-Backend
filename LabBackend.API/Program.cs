@@ -1,12 +1,15 @@
 using System.Text;
 using System.Text.Json.Serialization;
 using LabBackend.API.Data;
+using LabBackend.API.Domain.Entities;
 using LabBackend.API.Features.Analisis;
 using LabBackend.API.Features.Auth;
+using LabBackend.API.Features.Catalogos;
 using LabBackend.API.Features.Muestras;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
@@ -57,7 +60,11 @@ var app = builder.Build();
 // Pipeline de Peticiones
 if (app.Environment.IsDevelopment())
 {
+    // OpenAPI JSON
     app.MapOpenApi();
+
+    // Scalar UI (AOT-friendly) at /scalar (default is /scalar/v1)
+    app.MapScalarApiReference();
 }
 
 app.UseCors("AllowAll");
@@ -71,6 +78,7 @@ app.MapGroup("/api/muestras").MapMuestrasEndpoints();
 app.MapGroup("/api/analisis").MapAnalisisEndpoints();
 app.MapGroup("/api/asignaciones").MapAsignacionesEndpoints();
 app.MapGroup("/api/devoluciones").MapDevolucionesEndpoints();
+app.MapGroup("/api/catalogos").MapCatalogosEndpoints();
 
 app.Run();
 
@@ -96,6 +104,11 @@ app.Run();
 [JsonSerializable(typeof(AssignUserRequest))]
 // Devoluciones DTOs
 [JsonSerializable(typeof(CreateDevolucionRequest))]
+// Catálogos (listas) para AOT
+[JsonSerializable(typeof(List<TipoMuestra>))]
+[JsonSerializable(typeof(List<EstadoMuestra>))]
+[JsonSerializable(typeof(List<RegionSalud>))]
+[JsonSerializable(typeof(List<Solicitante>))]
 internal partial class AppJsonSerializerContext : JsonSerializerContext
 {
 }
