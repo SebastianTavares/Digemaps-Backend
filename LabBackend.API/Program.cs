@@ -1,7 +1,5 @@
 using System.Text;
-using System.Text.Json.Serialization;
 using LabBackend.API.Data;
-using LabBackend.API.Domain.Entities;
 using LabBackend.API.Features.Analisis;
 using LabBackend.API.Features.Auth;
 using LabBackend.API.Features.Catalogos;
@@ -11,15 +9,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 
-var builder = WebApplication.CreateSlimBuilder(args);
-
-// 1. Configuración JSON para AOT
-builder.Services.ConfigureHttpJsonOptions(options =>
-{
-    options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
-});
+// 1. CAMBIO CLAVE: Usamos CreateBuilder normal (No SlimBuilder)
+// Esto habilita todas las funciones estándar de .NET y evita errores de AOT.
+var builder = WebApplication.CreateBuilder(args);
 
 // 2. Base de Datos (SQL Server)
+// Eliminamos ".UseModel(...)" para que EF Core funcione dinámicamente sin errores.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContextPool<LabDbContext>(options =>
     options.UseSqlServer(connectionString));
@@ -43,10 +38,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-// 4. OpenAPI (Nativo)
+// 4. OpenAPI / Swagger
 builder.Services.AddOpenApi();
 
-// 5. CORS (Para permitir peticiones desde el Frontend)
+// 5. CORS (Permitir todo para desarrollo rápido)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -60,10 +55,10 @@ var app = builder.Build();
 // Pipeline de Peticiones
 if (app.Environment.IsDevelopment())
 {
-    // OpenAPI JSON
+    // Genera el JSON de OpenAPI
     app.MapOpenApi();
 
-    // Scalar UI (AOT-friendly) at /scalar (default is /scalar/v1)
+    // Interfaz Gráfica Scalar (Funciona perfecto en modo estándar también)
     app.MapScalarApiReference();
 }
 
@@ -72,43 +67,30 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Mapeo de Endpoints
+// ==========================================
+// Mapeo de Endpoints (Features)
+// ==========================================
+
+// Auth
 app.MapGroup("/api/auth").MapAuthEndpoints();
+
+// Muestras (Incluye Asignaciones y Devoluciones si están en la misma carpeta/namespace)
+// Si Asignaciones/Devoluciones están en clases separadas, asegúrate de tener los 'using' arriba.
 app.MapGroup("/api/muestras").MapMuestrasEndpoints();
+
+// Análisis (Físico y Micro)
 app.MapGroup("/api/analisis").MapAnalisisEndpoints();
+
+// Asignaciones (Si creaste una clase separada AsignacionesEndpoints)
 app.MapGroup("/api/asignaciones").MapAsignacionesEndpoints();
+
+// Devoluciones (Si creaste una clase separada DevolucionesEndpoints)
 app.MapGroup("/api/devoluciones").MapDevolucionesEndpoints();
+
+// Catálogos
 app.MapGroup("/api/catalogos").MapCatalogosEndpoints();
 
 app.Run();
 
-// Contexto de Serialización para AOT
-[JsonSerializable(typeof(string))]
-[JsonSerializable(typeof(int))]
-[JsonSerializable(typeof(bool))]
-[JsonSerializable(typeof(DateTime))]
-// Auth DTOs
-[JsonSerializable(typeof(LoginRequest))]
-[JsonSerializable(typeof(LoginResponse))]
-// Muestras DTOs
-[JsonSerializable(typeof(MuestraDto))]
-[JsonSerializable(typeof(MuestraDto[]))]
-[JsonSerializable(typeof(CreateMuestraRequest))]
-// Análisis Fisicoquímico DTOs
-[JsonSerializable(typeof(AnalisisFisicoquimicoDto))]
-[JsonSerializable(typeof(CreateAnalisisFisicoquimicoRequest))]
-// Análisis Microbiológico DTOs
-[JsonSerializable(typeof(AnalisisMicrobiologicoDto))]
-[JsonSerializable(typeof(CreateAnalisisMicrobiologicoRequest))]
-// Asignaciones DTOs
-[JsonSerializable(typeof(AssignUserRequest))]
-// Devoluciones DTOs
-[JsonSerializable(typeof(CreateDevolucionRequest))]
-// Catálogos (listas) para AOT
-[JsonSerializable(typeof(List<TipoMuestra>))]
-[JsonSerializable(typeof(List<EstadoMuestra>))]
-[JsonSerializable(typeof(List<RegionSalud>))]
-[JsonSerializable(typeof(List<Solicitante>))]
-internal partial class AppJsonSerializerContext : JsonSerializerContext
-{
-}
+// NOTA: He eliminado toda la clase 'AppJsonSerializerContext' del final.
+// En modo estándar (.NET JIT), NO LA NECESITAS. .NET serializa todo automáticamente.
