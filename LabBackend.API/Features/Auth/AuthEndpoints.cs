@@ -13,6 +13,8 @@ namespace LabBackend.API.Features.Auth;
 public record LoginRequest(string Correo, string Contrasena);
 public record LoginResponse(string Token, string Nombre, string Rol);
 public record RegisterRequest(string Nombre, string Correo, string Contrasena, string Rol);
+public record UpdateUsuarioRequest(string Nombre, string Correo, string Rol);
+public record UpdatePasswordRequest(string Contrasena);
 
 public record UsuarioResponse(
     int Id,
@@ -20,7 +22,6 @@ public record UsuarioResponse(
     string Correo,
     string Rol
 );
-
 
 public static class AuthEndpoints
 {
@@ -33,6 +34,18 @@ public static class AuthEndpoints
              .AllowAnonymous();
 
         group.MapGet("/users", GetAllUsersAsync)
+            .RequireAuthorization();
+
+        group.MapGet("/users/{id:int}", GetUserByIdAsync)
+            .RequireAuthorization();
+
+        group.MapPut("/users/{id:int}", UpdateUserAsync)
+            .RequireAuthorization();
+
+        group.MapPut("/users/{id:int}/password", UpdatePasswordAsync)
+            .RequireAuthorization();
+
+        group.MapDelete("/users/{id:int}", DeleteUserAsync)
             .RequireAuthorization();
 
         return group;
@@ -99,6 +112,56 @@ public static class AuthEndpoints
         await db.SaveChangesAsync();
 
         return TypedResults.Created($"/api/auth/users/{usuario.UsuId}", usuario.UsuId);
+    }
+
+    private static async Task<Results<Ok<UsuarioResponse>, NotFound>> GetUserByIdAsync(int id, LabDbContext db)
+    {
+        var usuario = await db.Usuarios.AsNoTracking().FirstOrDefaultAsync(u => u.UsuId == id);
+        if (usuario is null) return TypedResults.NotFound();
+        return TypedResults.Ok(new UsuarioResponse(usuario.UsuId, usuario.UsuNombre, usuario.UsuCorreo, usuario.UsuRol));
+    }
+
+    private static async Task<Results<NoContent, NotFound, Conflict<string>>> UpdateUserAsync(
+        int id, UpdateUsuarioRequest request, LabDbContext db)
+    {
+        var usuario = await db.Usuarios.FindAsync(id);
+        if (usuario is null) return TypedResults.NotFound();
+
+        if (usuario.UsuCorreo != request.Correo)
+        {
+            var emailExists = await db.Usuarios.AsNoTracking().AnyAsync(u => u.UsuCorreo == request.Correo && u.UsuId != id);
+            if (emailExists) return TypedResults.Conflict("El correo electrónico ya está registrado por otro usuario.");
+        }
+
+        usuario.UsuNombre = request.Nombre;
+        usuario.UsuCorreo = request.Correo;
+        usuario.UsuRol = request.Rol;
+        await db.SaveChangesAsync();
+        return TypedResults.NoContent();
+    }
+
+    private static async Task<Results<NoContent, NotFound>> UpdatePasswordAsync(
+        int id, UpdatePasswordRequest request, LabDbContext db)
+    {
+        var usuario = await db.Usuarios.FindAsync(id);
+        if (usuario is null) return TypedResults.NotFound();
+        // TODO: Hash the password before storing
+        usuario.UsuContrasena = request.Contrasena;
+        await db.SaveChangesAsync();
+        return TypedResults.NoContent();
+    }
+
+    private static async Task<Results<NoContent, NotFound, Conflict<string>>> DeleteUserAsync(int id, LabDbContext db)
+    {
+        var usuario = await db.Usuarios.FindAsync(id);
+        if (usuario is null) return TypedResults.NotFound();
+
+        var hasAssignments = await db.MuestraUsuarioRols.AsNoTracking().AnyAsync(m => m.UsuId == id);
+        if (hasAssignments) return TypedResults.Conflict("No se puede eliminar el usuario porque tiene asignaciones de muestras.");
+
+        db.Usuarios.Remove(usuario);
+        await db.SaveChangesAsync();
+        return TypedResults.NoContent();
     }
 
     private static string GenerateJwtToken(int userId, string nombre, string rol, IConfiguration configuration)
