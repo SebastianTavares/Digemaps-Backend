@@ -31,7 +31,7 @@ public static class AuthEndpoints
              .AllowAnonymous();
 
         group.MapPost("/register", RegisterAsync)
-             .AllowAnonymous();
+             .RequireAuthorization();
 
         group.MapGet("/users", GetAllUsersAsync)
             .RequireAuthorization();

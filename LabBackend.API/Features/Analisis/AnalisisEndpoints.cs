@@ -14,10 +14,27 @@ public record AnalisisFisicoquimicoDto(
     DateOnly FechaVencimiento,
     decimal Acidez,
     decimal CloroResidual,
-    decimal Ph,
-    decimal Humedad,
     decimal Cenizas,
+    decimal Cumarina,
+    string Colorante,
     decimal Densidad,
+    decimal Dureza,
+    decimal ExtractoSeco,
+    decimal Fecula,
+    decimal GradoAlcoholico,
+    decimal Humedad,
+    decimal IndiceRefraccion,
+    decimal IndiceAcidez,
+    decimal IndiceRancidez,
+    string MateriaGrasaCualitativa,
+    decimal MateriaGrasaCuantitativa,
+    decimal Ph,
+    string PruebaEbar,
+    decimal SolidosTotales,
+    string TiempoCoccion,
+    string OtrasDeterminaciones,
+    string Referencia,
+    string Observaciones,
     string AptoConsumoHumano);
 
 public record CreateAnalisisFisicoquimicoRequest(
@@ -77,13 +94,25 @@ public record UpdateAnalisisFisicoquimicoRequest(
     string AptoConsumoHumano);
 
 // DTOs for Microbiológico
+// DTO completo para Microbiológico
 public record AnalisisMicrobiologicoDto(
     int Id,
     int MuestraId,
     string MuestraCodigo,
     string ResMicroorganismosAerobios,
+    string ResRecuentoColiformes,   // Agregado
+    string ResColiformesTotales,    // Agregado
+    string ResPseudomonasSpp,       // Agregado
     string ResEColi,
     string ResSalmonellaSpp,
+    string ResEstafilococosAureus,  // Agregado
+    string ResHongos,               // Agregado
+    string ResLevaduras,            // Agregado
+    string ResEsterilidadComercial, // Agregado
+    string ResListeriaMonocytogenes,// Agregado
+    string MetodologiaReferencia,   // Agregado
+    string Equipos,                 // Agregado
+    string Observaciones,           // Agregado
     string AptoParaConsumo,
     bool EsCopia);
 
@@ -147,8 +176,8 @@ public static class AnalisisEndpoints
     // ========== FISICOQUÍMICO ==========
 
     private static async Task<Results<Ok<AnalisisFisicoquimicoDto>, NotFound>> GetFisicoquimicoByMuestraAsync(
-        int muestraId,
-        LabDbContext db)
+            int muestraId,
+            LabDbContext db)
     {
         var analisis = await db.AnalisisFisicoquimicos
             .AsNoTracking()
@@ -160,6 +189,7 @@ public static class AnalisisEndpoints
             return TypedResults.NotFound();
         }
 
+        // Aquí pasamos CADA propiedad en el orden exacto definido en el DTO
         return TypedResults.Ok(new AnalisisFisicoquimicoDto(
             analisis.AnalisisFqId,
             analisis.MuestraId,
@@ -168,10 +198,27 @@ public static class AnalisisEndpoints
             analisis.FechaVencimiento,
             analisis.Acidez,
             analisis.CloroResidual,
-            analisis.Ph,
-            analisis.Humedad,
             analisis.Cenizas,
+            analisis.Cumarina,
+            analisis.Colorante,
             analisis.Densidad,
+            analisis.Dureza,
+            analisis.ExtractoSeco,
+            analisis.Fecula,
+            analisis.GradoAlcoholico,
+            analisis.Humedad,
+            analisis.IndiceRefraccion,
+            analisis.IndiceAcidez,
+            analisis.IndiceRancidez,
+            analisis.MateriaGrasaCualitativa,
+            analisis.MateriaGrasaCuantitativa,
+            analisis.Ph,
+            analisis.PruebaEbar,
+            analisis.SolidosTotales,
+            analisis.TiempoCoccion,
+            analisis.OtrasDeterminaciones,
+            analisis.Referencia,
+            analisis.Observaciones,
             analisis.AptoConsumoHumano));
     }
 
@@ -303,8 +350,8 @@ public static class AnalisisEndpoints
     // ========== MICROBIOLÓGICO ==========
 
     private static async Task<Results<Ok<AnalisisMicrobiologicoDto>, NotFound>> GetMicrobiologicoByMuestraAsync(
-        int muestraId,
-        LabDbContext db)
+            int muestraId,
+            LabDbContext db)
     {
         var analisis = await db.AnalisisMicrobiologicos
             .AsNoTracking()
@@ -316,13 +363,25 @@ public static class AnalisisEndpoints
             return TypedResults.NotFound();
         }
 
+        // Mapeamos todos los campos al DTO actualizado
         return TypedResults.Ok(new AnalisisMicrobiologicoDto(
             analisis.AnalisisMicroId,
             analisis.MuestraId,
             analisis.Muestra.MuestraCodigoUnico,
             analisis.ResMicroorganismosAerobios,
+            analisis.ResRecuentoColiformes,
+            analisis.ResColiformesTotales,
+            analisis.ResPseudomonasSpp,
             analisis.ResEColi,
             analisis.ResSalmonellaSpp,
+            analisis.ResEstafilococosAureus,
+            analisis.ResHongos,
+            analisis.ResLevaduras,
+            analisis.ResEsterilidadComercial,
+            analisis.ResListeriaMonocytogenes,
+            analisis.MetodologiaReferencia,
+            analisis.Equipos,
+            analisis.Observaciones,
             analisis.AptoParaConsumo,
             analisis.EsCopia));
     }
