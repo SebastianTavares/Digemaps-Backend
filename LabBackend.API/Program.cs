@@ -65,8 +65,10 @@ builder.Services.AddOpenApi(options =>
 
         // Add global security requirement
         document.Security ??= [];
-        var requirement = new OpenApiSecurityRequirement();
-        requirement.Add(new OpenApiSecuritySchemeReference("Bearer"), []);
+        var requirement = new OpenApiSecurityRequirement
+        {
+            { new OpenApiSecuritySchemeReference("Bearer"), [] }
+        };
         document.Security.Add(requirement);
 
         return Task.CompletedTask;
@@ -121,4 +123,4 @@ app.MapGroup("/api/devoluciones").MapDevolucionesEndpoints();
 // Catálogos
 app.MapGroup("/api/catalogos").MapCatalogosEndpoints();
 
-app.Run();
+await app.RunAsync();
