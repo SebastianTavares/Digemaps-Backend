@@ -76,7 +76,7 @@ public static class AuthEndpoints
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.UsuCorreo == request.Correo);
 
-        if (usuario is null || usuario.UsuContrasena != request.Contrasena)
+        if (usuario is null || !BCrypt.Net.BCrypt.Verify(request.Contrasena, usuario.UsuContrasena))
         {
             return TypedResults.Unauthorized();
         }
@@ -99,12 +99,11 @@ public static class AuthEndpoints
             return TypedResults.Conflict("El correo electrónico ya está registrado.");
         }
 
-        // TODO: Hash the password before storing. Use BCrypt or Argon2 for production.
         var usuario = new Usuario
         {
             UsuNombre = request.Nombre,
             UsuCorreo = request.Correo,
-            UsuContrasena = request.Contrasena,
+            UsuContrasena = BCrypt.Net.BCrypt.HashPassword(request.Contrasena),
             UsuRol = request.Rol
         };
 
@@ -145,8 +144,8 @@ public static class AuthEndpoints
     {
         var usuario = await db.Usuarios.FindAsync(id);
         if (usuario is null) return TypedResults.NotFound();
-        // TODO: Hash the password before storing
-        usuario.UsuContrasena = request.Contrasena;
+
+        usuario.UsuContrasena = BCrypt.Net.BCrypt.HashPassword(request.Contrasena);
         await db.SaveChangesAsync();
         return TypedResults.NoContent();
     }
