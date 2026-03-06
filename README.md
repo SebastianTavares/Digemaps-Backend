@@ -36,3 +36,51 @@ The system is optimized to reduce query latency by approximately 40% compared to
 * **Access Control:** Role-Based Access Control (RBAC) via JWT.
 * **Data Integrity:** Explicit transactions (`BeginTransactionAsync`) for multi-table operations (e.g., sample returns).
 * **Referential Constraints:** Strict 1:1 relationships and unique constraints enforced at the database level.
+
+---
+
+## ⚙️ Local Setup & Execution
+
+### Prerequisites
+* **.NET 10 SDK** installed.
+* **SQL Server** instance running locally or remotely.
+
+### 1. Clone the Repository
+
+```bash
+git clone [https://github.com/SebastianTavares/Digemaps-Backend.git](https://github.com/SebastianTavares/Digemaps-Backend.git)
+cd Digemaps-Backend
+```
+
+### 2. Environment Configuration
+For security reasons, database connection strings and JWT keys are not tracked in version control. 
+Create an `appsettings.Development.json` file inside the `LabBackend.API` directory with the following structure:
+
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=YOUR_SERVER_NAME;Database=digemapsDB;Trusted_Connection=True;TrustServerCertificate=True;"
+  },
+  "Jwt": {
+    "Key": "YOUR_SUPER_SECRET_KEY_MUST_BE_AT_LEAST_32_CHARACTERS",
+    "Issuer": "DigemapsAPI",
+    "Audience": "DigemapsUsers"
+  }
+}
+```
+
+### 3. Database Setup (Database-First)
+This project utilizes EF Core in a Database-First approach. Ensure your SQL Server instance is running and the `digemapsDB` schema is restored and accessible via the connection string provided in the previous step.
+
+### 4. Build and Run
+Navigate into the main project directory and execute the application:
+
+```bash
+cd LabBackend.API
+dotnet build
+dotnet run
+```
+
+### 5. Access the API Documentation
+Once the server is running, you can explore, test, and authenticate endpoints using the integrated documentation UI:
+* Navigate to `https://localhost:<port>/scalar` (or your configured OpenAPI endpoint route) in your browser.
